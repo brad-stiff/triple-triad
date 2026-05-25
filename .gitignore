@@ -1,0 +1,12 @@
+node_modules
+dist
+out
+*.log
+.DS_Store
+.eslintcache
+
+# Ripped game art (download locally)
+src/renderer/assets/cards/*.png
+src/renderer/assets/board.png
+src/renderer/assets/frame-*.png
+src/renderer/assets/sounds/*
