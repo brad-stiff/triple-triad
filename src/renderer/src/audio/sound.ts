@@ -1,41 +1,66 @@
-let muted = false
-let initialized = false
-const buffers = new Map<string, AudioBuffer>()
+import cardUrl from '../../assets/sounds/card.wav?url'
+import invalidUrl from '../../assets/sounds/invalid.wav?url'
+import selectUrl from '../../assets/sounds/select.wav?url'
+import specialUrl from '../../assets/sounds/special.wav?url'
+import startUrl from '../../assets/sounds/start.wav?url'
+import turnUrl from '../../assets/sounds/turn.wav?url'
 
-const SOUND_FILES: Record<string, string> = {
-  select: 'select.wav',
-  card: 'card.wav',
-  turn: 'turn.wav',
-  special: 'special.wav',
-  invalid: 'invalid.wav',
-  start: 'start.wav'
+const SOUND_URLS = {
+  select: selectUrl,
+  card: cardUrl,
+  turn: turnUrl,
+  special: specialUrl,
+  invalid: invalidUrl,
+  start: startUrl
+} as const
+
+type SoundName = keyof typeof SOUND_URLS
+
+let muted = false
+let loadPromise: Promise<void> | null = null
+const clips = new Map<SoundName, HTMLAudioElement>()
+
+function loadClip(name: SoundName, url: string): Promise<void> {
+  return new Promise((resolve) => {
+    const audio = new Audio()
+    audio.preload = 'auto'
+    const finish = (): void => resolve()
+    audio.addEventListener(
+      'canplaythrough',
+      () => {
+        clips.set(name, audio)
+        finish()
+      },
+      { once: true }
+    )
+    audio.addEventListener('error', finish, { once: true })
+    audio.src = url
+  })
 }
 
-async function loadBuffer(ctx: AudioContext, name: string, file: string): Promise<void> {
-  try {
-    const url = new URL(`../assets/sounds/${file}`, import.meta.url).href
-    const res = await fetch(url)
-    if (!res.ok) return
-    const data = await res.arrayBuffer()
-    buffers.set(name, await ctx.decodeAudioData(data))
-  } catch {
-    /* optional assets */
+async function ensureLoaded(): Promise<void> {
+  if (!loadPromise) {
+    loadPromise = Promise.all(
+      (Object.entries(SOUND_URLS) as [SoundName, string][]).map(([name, url]) =>
+        loadClip(name, url)
+      )
+    ).then(() => undefined)
   }
+  return loadPromise
+}
+
+/** Call on first user click so playback is allowed in Electron. */
+export async function unlockSound(): Promise<void> {
+  await ensureLoaded()
+}
+
+export function hasSoundFile(name: SoundName): boolean {
+  return clips.has(name)
 }
 
 export async function initSound(enabled: boolean): Promise<void> {
   muted = !enabled
-  if (initialized) return
-  try {
-    const ctx = new AudioContext()
-    await Promise.all(
-      Object.entries(SOUND_FILES).map(([name, file]) => loadBuffer(ctx, name, file))
-    )
-    ;(window as unknown as { __ttAudio?: AudioContext }).__ttAudio = ctx
-    initialized = true
-  } catch {
-    initialized = true
-  }
+  await ensureLoaded()
 }
 
 export function setSoundMuted(m: boolean): void {
@@ -45,7 +70,7 @@ export function setSoundMuted(m: boolean): void {
 function playTone(freq: number, duration: number, volume = 0.08): void {
   if (muted) return
   try {
-    const ctx = (window as unknown as { __ttAudio?: AudioContext }).__ttAudio ?? new AudioContext()
+    const ctx = new AudioContext()
     const osc = ctx.createOscillator()
     const gain = ctx.createGain()
     osc.frequency.value = freq
@@ -54,55 +79,50 @@ function playTone(freq: number, duration: number, volume = 0.08): void {
     gain.connect(ctx.destination)
     osc.start()
     osc.stop(ctx.currentTime + duration)
+    void ctx.close()
   } catch {
     /* ignore */
   }
 }
 
-function playBuffer(name: string): void {
+function playClip(name: SoundName): void {
   if (muted) return
-  const buf = buffers.get(name)
-  const ctx = (window as unknown as { __ttAudio?: AudioContext }).__ttAudio
-  if (!buf || !ctx) return
-  try {
-    const src = ctx.createBufferSource()
-    src.buffer = buf
-    const gain = ctx.createGain()
-    gain.gain.value = 0.35
-    src.connect(gain)
-    gain.connect(ctx.destination)
-    src.start()
-  } catch {
-    /* ignore */
+  const template = clips.get(name)
+  if (!template) {
+    playTone(440, 0.08)
+    return
   }
+  const audio = template.cloneNode(true) as HTMLAudioElement
+  audio.volume = 0.45
+  void audio.play().catch(() => playTone(440, 0.08))
 }
 
 export function playSelect(): void {
-  if (buffers.has('select')) playBuffer('select')
+  if (clips.has('select')) playClip('select')
   else playTone(520, 0.05)
 }
 
 export function playCard(): void {
-  if (buffers.has('card')) playBuffer('card')
+  if (clips.has('card')) playClip('card')
   else playTone(380, 0.06)
 }
 
 export function playTurn(): void {
-  if (buffers.has('turn')) playBuffer('turn')
+  if (clips.has('turn')) playClip('turn')
   else playTone(280, 0.08)
 }
 
 export function playSpecial(): void {
-  if (buffers.has('special')) playBuffer('special')
+  if (clips.has('special')) playClip('special')
   else playTone(660, 0.12)
 }
 
 export function playInvalid(): void {
-  if (buffers.has('invalid')) playBuffer('invalid')
+  if (clips.has('invalid')) playClip('invalid')
   else playTone(180, 0.1)
 }
 
 export function playMatchStart(): void {
-  if (buffers.has('start')) playBuffer('start')
+  if (clips.has('start')) playClip('start')
   else playTone(440, 0.15)
 }

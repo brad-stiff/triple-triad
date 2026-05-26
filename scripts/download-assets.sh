@@ -34,3 +34,6 @@ if [[ "$failed" -gt 0 ]]; then
   echo "Warning: $failed downloads failed" >&2
   exit 1
 fi
+
+echo "Downloading SFX..."
+bash "$(dirname "$0")/download-sounds.sh"

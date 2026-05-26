@@ -9,7 +9,7 @@ Faithful fan clone of the Triple Triad minigame from *Final Fantasy VIII*, built
 - Setup screen with **rule toggles** and **region presets** (Balamb, Galbadia, Dollet, …)
 - Full **110-card** stat database; **collection** screen to build a **5-card deck** from owned cards
 - **Earn cards** after beating the CPU (random card from the CPU’s played hand you don’t own)
-- Place + flip **animations**; optional **SFX** (download with `npm run assets:sounds`)
+- Place + flip **animations**; **FF8 SFX** from the reference pack (`npm run assets` or `assets:sounds`)
 - Screens: main menu → collection / setup → play → result
 - **Mouse** input; profile in `localStorage` (owned cards, deck, wins/losses, SFX toggle)
 
@@ -21,8 +21,8 @@ Faithful fan clone of the Triple Triad minigame from *Final Fantasy VIII*, built
 
 ```bash
 npm install
-npm run assets          # download all 110 cards + board (see Assets below)
-npm run assets:sounds   # optional SFX (Web Audio fallback if missing)
+npm run assets          # 110 cards, board, frames, and FF8 SFX (see Assets below)
+npm run assets:sounds   # SFX only if you already have card art
 npm run dev
 ```
 
@@ -38,9 +38,9 @@ That pulls all **110** card faces plus board/frames from the [triple-triad-html5
 
 Alternative rips: [Spriters Resource — Triple Triad Cards](https://www.spriters-resource.com/playstation/finalfantasy8/asset/35819/) → place as `src/renderer/assets/cards/001.png` … `110.png`
 
-Optional: `board.png`, `frame-blue.png`, `frame-red.png` in `src/renderer/assets/`.
+Optional: `board.png`, `frame-blue.png`, `frame-red.png`, and `sounds/*.wav` in `src/renderer/assets/`.
 
-The game draws **placeholder** frames and labels when images are missing.
+The game draws **placeholder** frames and labels when images are missing, and quiet beeps when SFX files are missing.
 
 ## Gameplay
 

@@ -1,5 +1,6 @@
 import {
   initSound,
+  unlockSound,
   playCard,
   playInvalid,
   playMatchStart,
@@ -504,6 +505,7 @@ export class TripleTriadApp {
   }
 
   private onClick(e: MouseEvent): void {
+    void unlockSound()
     const { x, y } = this.pointer(e)
 
     if (this.screen === 'collection') {
